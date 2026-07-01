@@ -5,16 +5,15 @@ on:
     branches: [windows]
 
 jobs:
-  setup_gh:
+  smoke:
     runs-on: windows-latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - run: pwsh scripts/setup_gh.ps1
       - name: install laboot
         run: pwsh scripts/install.ps1
-      - name: laboot setup_gh (fast path, via installed laboot)
+      - name: laboot setup-gh (fast path, via installed laboot)
         shell: pwsh
         run: |
-          & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup_gh
+          & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-gh

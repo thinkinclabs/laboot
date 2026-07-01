@@ -12,10 +12,13 @@
 
 $ErrorActionPreference = "Stop"
 
-function Info($msg) { Write-Host "[laboot] $msg" -ForegroundColor Cyan }
-
 $BRANCH = "windows"
 $REPO = "thinkinclabs/laboot"
+
+if (-not (Get-Command Info -ErrorAction SilentlyContinue)) {
+    Invoke-Expression (Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/utils.ps1")
+}
+
 $InstallDir = "$env:LOCALAPPDATA\laboot"
 $Ps1 = "$InstallDir\laboot.ps1"
 $Cmd = "$InstallDir\laboot.cmd"
@@ -33,4 +36,4 @@ if (($userPath -split ';') -notcontains $InstallDir) {
     Info "$InstallDir already on your User PATH"
 }
 
-Info "Open a new terminal, then try: laboot setup_labrain"
+Info "Open a new terminal, then try: laboot setup-labrain"

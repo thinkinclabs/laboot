@@ -1,9 +1,14 @@
-# setup_gh.ps1 (windows) - ensures the GitHub CLI is installed and authenticated.
+# setup-gh.ps1 (windows) - ensures the GitHub CLI is installed and authenticated.
 # Idempotent: already-installed / already-authenticated just skips ahead.
 
 $ErrorActionPreference = "Stop"
 
-function Info($msg) { Write-Host "[laboot] $msg" -ForegroundColor Cyan }
+$BRANCH = "windows"
+$REPO = "thinkinclabs/laboot"
+
+if (-not (Get-Command Info -ErrorAction SilentlyContinue)) {
+    Invoke-Expression (Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/utils.ps1")
+}
 
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     Info "gh already installed"
