@@ -5,7 +5,7 @@ on:
     branches: [linux]
 
 jobs:
-  setup_gh:
+  smoke:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
