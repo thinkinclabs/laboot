@@ -3,10 +3,12 @@
 # re-runs this same script (fetched the same way as any other command) to
 # update laboot in place - self-hosted, no separate maintenance path.
 #
-# Windows has no PATH-executable convention for a bare "laboot" the way
-# unix does for a chmod +x script, so this installs laboot.ps1 to a fixed
-# location and registers a `laboot` function in the user's PowerShell
-# profile instead - works the same from any new PowerShell session.
+# Installs laboot.ps1 plus a laboot.cmd shim (PATHEXT-resolved, works from
+# cmd.exe and PowerShell alike) into a fixed dir, then adds that dir to the
+# User PATH if it isn't already there. Deliberately not $PROFILE-based:
+# $PROFILE resolves to a different path per PowerShell host, so a function
+# registered there is invisible from other hosts (or even other pwsh
+# invocations in non-interactive contexts) - a PATH shim is host-agnostic.
 
 $ErrorActionPreference = "Stop"
 
@@ -15,25 +17,20 @@ function Info($msg) { Write-Host "[laboot] $msg" -ForegroundColor Cyan }
 $BRANCH = "windows"
 $REPO = "thinkinclabs/laboot"
 $InstallDir = "$env:LOCALAPPDATA\laboot"
-$Bin = "$InstallDir\laboot.ps1"
+$Ps1 = "$InstallDir\laboot.ps1"
+$Cmd = "$InstallDir\laboot.cmd"
 
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/laboot.ps1" -OutFile $Bin
-Info "Installed laboot to $Bin"
+Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/laboot.ps1" -OutFile $Ps1
+Set-Content -Path $Cmd -Value "@echo off`r`npowershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0laboot.ps1`" %*"
+Info "Installed laboot to $InstallDir"
 
-if (-not (Test-Path $PROFILE)) {
-    New-Item -ItemType File -Force -Path $PROFILE | Out-Null
-}
-
-$marker = "# >>> laboot >>>"
-$markerEnd = "# <<< laboot <<<"
-$profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
-
-if ($profileContent -notmatch [regex]::Escape($marker)) {
-    Add-Content -Path $PROFILE -Value "`n$marker`nfunction laboot { & `"$Bin`" @args }`n$markerEnd`n"
-    Info "Added a 'laboot' function to your PowerShell profile: $PROFILE"
+$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+if (($userPath -split ';') -notcontains $InstallDir) {
+    [Environment]::SetEnvironmentVariable('Path', "$userPath;$InstallDir", 'User')
+    Info "Added $InstallDir to your User PATH"
 } else {
-    Info "'laboot' function already present in your PowerShell profile"
+    Info "$InstallDir already on your User PATH"
 }
 
-Info "Open a new PowerShell session, then try: laboot setup_labrain"
+Info "Open a new terminal, then try: laboot setup_labrain"

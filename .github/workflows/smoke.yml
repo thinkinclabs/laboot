@@ -17,5 +17,4 @@ jobs:
       - name: laboot setup_gh (fast path, via installed laboot)
         shell: pwsh
         run: |
-          . $PROFILE
-          laboot setup_gh
+          & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup_gh
