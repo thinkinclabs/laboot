@@ -11,7 +11,7 @@ REPO="thinkinclabs/laboot"
 INSTALL_DIR="$HOME/.local/bin"
 BIN="$INSTALL_DIR/laboot"
 
-info() { printf '\033[1;34m[laboot]\033[0m %s\n' "$1"; }
+declare -f info >/dev/null 2>&1 || source <(curl -fsSL "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/utils.sh")
 
 mkdir -p "$INSTALL_DIR"
 curl -fsSL "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/laboot.sh" -o "$BIN"
@@ -27,4 +27,4 @@ case ":$PATH:" in
     ;;
 esac
 
-info "Try: laboot setup_labrain"
+info "Try: laboot setup-labrain"

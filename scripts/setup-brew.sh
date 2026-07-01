@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-info() { printf '\033[1;34m[laboot]\033[0m %s\n' "$1"; }
+declare -f info >/dev/null 2>&1 || source <(curl -fsSL "https://raw.githubusercontent.com/thinkinclabs/laboot/mac/scripts/utils.sh")
 
 if command -v brew >/dev/null 2>&1; then
   info "brew already installed"

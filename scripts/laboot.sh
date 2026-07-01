@@ -5,11 +5,18 @@
 #
 #   laboot <url>    fetch the URL, run it via bash
 #   laboot <name>   fetch scripts/<name>.sh from this branch, run it via bash
+#
+# Sources utils.sh (shared helpers, e.g. the `info` banner) and exports its
+# functions (bash-only feature) so every command run through laboot gets
+# them for free — no script needs its own copy.
 
 set -euo pipefail
 
 BRANCH="mac"
 REPO="thinkinclabs/laboot"
+
+source <(curl -fsSL "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/utils.sh")
+export -f info
 
 target="${1:?Usage: laboot <url|command-name>}"
 
