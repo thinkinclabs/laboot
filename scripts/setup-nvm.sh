@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-declare -f info >/dev/null 2>&1 || source <(curl -fsSL "https://raw.githubusercontent.com/thinkinclabs/laboot/linux/scripts/utils.sh")
+declare -f info >/dev/null 2>&1 || { _u=$(mktemp) && curl -fsSL "https://raw.githubusercontent.com/thinkinclabs/laboot/linux/scripts/utils.sh" -o "$_u" && source "$_u" && rm -f "$_u"; }
 
 if [ -d "$HOME/.nvm" ]; then
   info "nvm already installed"
