@@ -1,0 +1,14 @@
+name: smoke
+
+on:
+  push:
+    branches: [windows]
+
+jobs:
+  setup_gh:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pwsh scripts/setup_gh.ps1
