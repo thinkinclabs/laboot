@@ -8,14 +8,17 @@
 #
 # Sources utils.sh (shared helpers, e.g. the `info` banner) and exports its
 # functions (bash-only feature) so every command run through laboot gets
-# them for free — no script needs its own copy.
+# them for free — no script needs its own copy. Sourced via a temp file, not
+# `source <(...)`: macOS ships bash 3.2 as /bin/bash, whose process
+# substitution does not reliably persist functions defined via `source`
+# into the calling shell.
 
 set -euo pipefail
 
 BRANCH="mac"
 REPO="thinkinclabs/laboot"
 
-source <(curl -fsSL "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/utils.sh")
+_u=$(mktemp) && curl -fsSL "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/utils.sh" -o "$_u" && source "$_u" && rm -f "$_u"
 export -f info
 
 target="${1:?Usage: laboot <url|command-name>}"
