@@ -12,3 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/setup_gh.sh
+      - name: install laboot
+        run: bash scripts/install.sh
+      - name: laboot setup_gh (fast path, via installed laboot)
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          laboot setup_gh
