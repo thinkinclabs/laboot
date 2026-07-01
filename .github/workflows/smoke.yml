@@ -1,0 +1,14 @@
+name: smoke
+
+on:
+  push:
+    branches: [mac]
+
+jobs:
+  setup_gh:
+    runs-on: macos-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/setup_gh.sh
