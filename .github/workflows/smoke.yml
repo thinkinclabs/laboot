@@ -13,7 +13,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: install laboot
         run: pwsh scripts/install.ps1
-      - name: laboot setup-gh (fast path, via installed laboot)
+      - name: laboot commands (fast path, via installed laboot)
         shell: pwsh
         run: |
           & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-gh
+          & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-nvm
+          & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-sdkman

@@ -23,11 +23,7 @@ if (-not (Get-Command laboot -ErrorAction SilentlyContinue)) {
 Info "Ensuring GitHub CLI is ready..."
 laboot setup-gh
 
-$bash = "$env:ProgramFiles\Git\bin\bash.exe"
-if (-not (Test-Path $bash)) {
-    Info "Git for Windows not found at '$bash'. Install it: https://gitforwindows.org"
-    exit 1
-}
+$bash = Get-GitBash
 
 Info "Bootstrapping labrain..."
 gh api repos/thinkinclabs/labrain/contents/scripts/setup-labrain.sh -H "Accept: application/vnd.github.raw" | & $bash -
