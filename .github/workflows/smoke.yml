@@ -18,4 +18,11 @@ jobs:
         run: |
           & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-gh
           & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-nvm
+      # setup-sdkman needs zip/unzip, which a bare Git for Windows install
+      # doesn't ship (no package manager to add it either) — soft-check
+      # only, so a missing zip on this runner doesn't fail the whole job.
+      - name: laboot setup-sdkman (soft check — needs zip, not always present)
+        shell: pwsh
+        continue-on-error: true
+        run: |
           & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-sdkman
