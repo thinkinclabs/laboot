@@ -29,23 +29,33 @@ curl -fsSL "https://raw.githubusercontent.com/thinkinclabs/laboot/$BRANCH/script
 
 ## Installing laboot
 
-The one raw one-liner you ever need — everything after this goes through `laboot` itself:
+The one raw one-liner you ever need — everything after this goes through `laboot` itself.
 
+macOS / Linux:
 ```sh
-# macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/mac/scripts/install.sh | bash
 ```
+
+Windows:
 ```powershell
-# Windows
 irm https://raw.githubusercontent.com/thinkinclabs/laboot/windows/scripts/install.ps1 | iex
 ```
 
 This installs `laboot` onto your `PATH`. From then on:
 
+Run a named command:
 ```sh
-laboot setup_labrain          # run a named command
-laboot install                # update laboot itself — same mechanism, self-hosted
-laboot https://example.com/x  # forward any URL straight to your shell
+laboot setup_labrain
+```
+
+Update laboot itself — same mechanism, self-hosted:
+```sh
+laboot install
+```
+
+Forward any URL straight to your shell:
+```sh
+laboot https://example.com/x
 ```
 
 ## Maintaining this repo
