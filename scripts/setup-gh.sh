@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
-# setup_gh.sh (linux) — ensures the GitHub CLI is installed and authenticated.
+# setup-gh.sh (linux) — ensures the GitHub CLI is installed and authenticated.
 # Idempotent: already-installed / already-authenticated just skips ahead.
+# The Homebrew fallback below depends on the setup-brew command, run through
+# laboot itself — every prerequisite a command needs goes through
+# `laboot <name>`, never a hand-rolled fetch, so there is one dependency
+# mechanism, not two.
 
 set -euo pipefail
 
-info() { printf '\033[1;34m[laboot]\033[0m %s\n' "$1"; }
+BRANCH="linux"
+REPO="thinkinclabs/laboot"
+
+declare -f info >/dev/null 2>&1 || source <(curl -fsSL "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/utils.sh")
+
+if ! command -v laboot >/dev/null 2>&1; then
+  bash <(curl -fsSL "https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/install.sh")
+  export PATH="$HOME/.local/bin:$PATH"
+fi
 
 if command -v gh >/dev/null 2>&1; then
   info "gh already installed"
@@ -30,6 +42,7 @@ elif command -v pacman >/dev/null 2>&1; then
   sudo pacman -Sy --noconfirm github-cli
 elif command -v brew >/dev/null 2>&1; then
   info "Installing GitHub CLI via Homebrew..."
+  laboot setup-brew
   brew install gh
 else
   info "No supported package manager found. Install gh manually: https://cli.github.com"
