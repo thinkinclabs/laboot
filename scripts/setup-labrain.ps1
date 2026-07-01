@@ -3,8 +3,11 @@
 # prerequisite a command needs goes through `laboot <name>`, never a
 # hand-rolled fetch, so there is one dependency mechanism, not two.
 #
-# labrain's own scripts/setup-labrain.sh is bash-only; it runs through Git for
-# Windows' bundled bash.exe, which any git-based dev workflow already has.
+# The clone+persist logic lives in this branch's own setup-labrain.sh (bash),
+# run through Git for Windows' bundled bash.exe, which any git-based dev
+# workflow already has. This used to fetch and run a copy of that logic
+# from the labrain repo itself via the GitHub contents API; it's now a
+# laboot command like everything else.
 
 $ErrorActionPreference = "Stop"
 
@@ -20,10 +23,7 @@ if (-not (Get-Command laboot -ErrorAction SilentlyContinue)) {
     $env:Path = "$env:LOCALAPPDATA\laboot;$env:Path"
 }
 
-Info "Ensuring GitHub CLI is ready..."
-laboot setup-gh
-
 $bash = Get-GitBash
 
 Info "Bootstrapping labrain..."
-gh api repos/thinkinclabs/labrain/contents/scripts/setup-labrain.sh -H "Accept: application/vnd.github.raw" | & $bash -
+& $bash -c "curl -fsSL https://raw.githubusercontent.com/$REPO/$BRANCH/scripts/setup-labrain.sh | bash"
