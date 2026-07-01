@@ -1,30 +1,55 @@
 # laboot
 
-Public, curl-able bootstrap installer for [labrain](https://github.com/thinkinclabs/labrain) (private). This repo exists only to solve the chicken-and-egg problem of fetching a private repo's setup script from a machine that has nothing installed yet — `laboot` itself is public, so `curl` works with zero setup; it then installs and authenticates the GitHub CLI (`gh`) locally, and *that* is what's allowed to reach the private `labrain` repo.
+`laboot` runs multi-platform commands from a single source: `laboot <url>` fetches a URL and forwards it into your platform's default shell (`bash` on macOS/Linux, PowerShell on Windows). Named commands (`laboot <name>`) are shorthand for a URL on this repo. Bootstrapping [labrain](https://github.com/thinkinclabs/labrain) (private) is just the first command that happens to live here — `laboot` itself is generic.
 
-This repo has **no `main`-branch code** — `main` is docs only. Each supported OS is a separate branch holding that OS's scripts. Pick your branch:
+This repo has **no `main`-branch code** — `main` is docs only. Each supported platform is a separate branch holding that platform's scripts.
 
-| OS | One-liner |
+## Platforms
+
+| Platform | Branch | Shell |
+|---|---|---|
+| macOS | `mac` | bash |
+| Linux | `linux` | bash |
+| Windows | `windows` | PowerShell |
+
+## Commands
+
+| Name | Does |
 |---|---|
-| macOS | `curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/mac/scripts/setup_labrain.sh \| bash` |
-| Linux | `curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/linux/scripts/setup_labrain.sh \| bash` |
-| Windows (PowerShell) | `irm https://raw.githubusercontent.com/thinkinclabs/laboot/windows/scripts/setup_labrain.ps1 \| iex` |
+| `install` | Installs or updates the `laboot` CLI itself. |
+| `setup_labrain` | Bootstraps [labrain](https://github.com/thinkinclabs/labrain) (private) — installs/authenticates `gh` first, then hands off to labrain's own setup script. |
 
-## How it fits together
+Every command is `scripts/<name>.sh` (`.ps1` on `windows`) on the matching platform branch. The general shape for running any command directly, without `laboot` installed, is the same fetch-and-forward `laboot <url>` does internally:
 
-Two scripts per branch, one dependency direction:
-
-- **`scripts/setup_gh.sh`** (`.ps1` on `windows`) — ensures `gh` is installed and authenticated. Idempotent: already installed / already logged in just skips ahead.
-- **`scripts/setup_labrain.sh`** (`.ps1` on `windows`) — depends on `setup_gh`, fetching and running it first (`curl`/`irm` against the same branch, not a local file — the entrypoint is always a single remote file, so the dependency has to be fetched too). Once `gh` is ready, it fetches and runs labrain's own `scripts/setup-labrain.sh` via the GitHub API (`Accept: application/vnd.github.raw`), which is the one authenticated hop into the private repo.
-
+```sh
+COMMAND=setup_labrain
+BRANCH=mac   # or linux, or windows
+curl -fsSL "https://raw.githubusercontent.com/thinkinclabs/laboot/$BRANCH/scripts/$COMMAND.sh" | bash
 ```
-setup_labrain.sh  →  setup_gh.sh  →  (installs + auths gh)
-       └──────────────→  gh api .../labrain/.../setup-labrain.sh | bash
+
+## Installing laboot
+
+The one raw one-liner you ever need — everything after this goes through `laboot` itself:
+
+```sh
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/mac/scripts/install.sh | bash
+```
+```powershell
+# Windows
+irm https://raw.githubusercontent.com/thinkinclabs/laboot/windows/scripts/install.ps1 | iex
+```
+
+This installs `laboot` onto your `PATH`. From then on:
+
+```sh
+laboot setup_labrain          # run a named command
+laboot install                # update laboot itself — same mechanism, self-hosted
+laboot https://example.com/x  # forward any URL straight to your shell
 ```
 
 ## Maintaining this repo
 
-- **Every branch's two scripts must stay logically parallel**: same flow (check → install if missing → check auth → login if needed → hand off), same function names (`info`), same exit behavior. If you fix a bug on one branch, check whether the same bug exists on the others.
-- **Adding a new OS**: branch off `main`, add `scripts/setup_gh.<ext>` and `scripts/setup_labrain.<ext>` following the flow above, copy the `.github/workflows/smoke.yml` pattern from an existing branch (adjust the runner), then add a row to this table.
-- **CI**: each OS branch runs a smoke test on push (`.github/workflows/smoke.yml`) that exercises the already-installed/already-authenticated fast path on a matching GitHub-hosted runner — it can't test a real first-time install (no interactive prompt in CI), but it catches syntax errors and confirms the idempotent no-op path stays a no-op.
-- `laboot` only ever provisions `gh` and calls into `labrain`'s own script — it should never need labrain-specific logic. If labrain's bootstrap contract changes (e.g. the API path), update the one `gh api ...` line on every branch.
+- **Adding a new command**: add `scripts/<name>.sh` (`.ps1` on `windows`) to every platform branch that should support it, keep the flow (check → install if missing → check auth → login if needed → do the thing) parallel across branches, then add a row to the Commands table above.
+- **`laboot` and `install` are commands too** — they live at `scripts/laboot.sh`/`scripts/install.sh` and follow the exact same cross-branch-parity rule as any other command. `install` fetches the current branch's `laboot.sh` and writes it to a `PATH` location; `laboot` itself just resolves a name or URL and forwards it to the shell — keep it that thin, all real logic belongs in the individual command scripts.
+- **CI**: each platform branch runs a smoke test on push (`.github/workflows/smoke.yml`) that installs `laboot`, then exercises each command's already-installed/already-authenticated fast path on a matching GitHub-hosted runner. It can't test a real first-time interactive install, but it catches syntax errors and confirms the idempotent no-op paths stay no-ops.
