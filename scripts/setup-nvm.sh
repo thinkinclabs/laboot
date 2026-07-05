@@ -9,5 +9,5 @@ if [ -d "$HOME/.nvm" ]; then
   info "nvm already installed"
 else
   info "Installing nvm..."
-  git clone --depth=1 https://github.com/nvm-sh/nvm.git "$HOME/.nvm"
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 fi
