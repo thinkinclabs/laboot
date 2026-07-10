@@ -11,6 +11,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+      - name: syntax-check every script
+        run: for f in scripts/*.sh; do bash -n "$f"; done
       - name: install laboot
         run: bash scripts/install.sh
       - name: laboot commands (fast path, all idempotent no-ops on this runner)
@@ -20,3 +22,9 @@ jobs:
           laboot setup-gh
           laboot setup-sdkman
           laboot setup-nvm
+          laboot setup-backend
+          LABOOT_NATIVE=0 laboot setup-web
+      # setup-native / setup-android / setup-ios are excluded from the fast
+      # path on purpose: their payloads are multi-GB casks (Android Studio,
+      # Xcode) or GUI-gated dialogs — the syntax check above still covers
+      # them.
