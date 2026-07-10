@@ -28,6 +28,11 @@ Command names are **dash-separated** (`setup-labrain`, not `setup_labrain`).
 | `setup-brew` | macOS, Linux | Ensures Homebrew is installed. |
 | `setup-sdkman` | macOS, Linux, Windows (via Git Bash) | Ensures [SDKMAN](https://sdkman.io) is installed. No native Windows installer, so the Windows command runs the same bash script through Git for Windows' bundled `bash.exe`. SDKMAN's own installer needs `zip`/`unzip`, which a bare Git for Windows install doesn't ship (no package manager to add it either) — install those yourself first if it fails. |
 | `setup-nvm` | macOS, Linux, Windows (via Git Bash) | Ensures [nvm](https://github.com/nvm-sh/nvm) is installed. Same Git Bash delegation as `setup-sdkman`. |
+| `setup-backend` | macOS | Backend dev prerequisites — currently just SDKMAN, via `setup-sdkman`. Afterwards, inside a repo with an `.sdkmanrc`, run `sdk env install`. |
+| `setup-web` | macOS | Web dev prerequisites: nvm (via `setup-nvm`), Node (from `./.nvmrc` if present, else latest LTS) and Yarn via corepack. Ends by offering the native suite (`setup-native`) — the prompt reads `/dev/tty` (stdin is the pipe under `curl \| bash`); non-interactive runs skip it, `LABOOT_NATIVE=1`/`0` forces/silences it. |
+| `setup-native` | macOS | Meta-command: runs `setup-android` then `setup-ios`. |
+| `setup-android` | macOS | Android native tooling: adb (`android-platform-tools` cask) + Android Studio cask, and persists `ANDROID_HOME`/`PATH` to your shell rc (SDK's own `platform-tools` first, so it wins over the Homebrew adb once the SDK exists). Open Android Studio once to let its wizard download the SDK/emulator, create a virtual device in Device Manager, then `adb reverse tcp:8080 tcp:8080` works against any attached device/emulator. |
+| `setup-ios` | macOS | iOS native tooling: Xcode Command Line Tools, watchman, CocoaPods. Full Xcode (simulator) needs an App Store login and can't be installed unattended — the command checks for it and prints instructions instead. |
 
 Every command is `scripts/<name>.sh` (`.ps1` on `windows`) on the matching platform branch. The general shape for running any command directly, without `laboot` installed, is the same fetch-and-forward `laboot <url>` does internally:
 
