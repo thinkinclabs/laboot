@@ -2,7 +2,7 @@
 
 `laboot` runs multi-platform commands from a single source: `laboot <url>` fetches a URL and forwards it into your platform's default shell (`bash` on macOS/Linux, PowerShell on Windows). Named commands (`laboot <name>`) are shorthand for a URL on this repo. Bootstrapping [labrain](https://github.com/thinkinclabs/labrain) (private) is just the first command that happens to live here — `laboot` itself is generic.
 
-This repo has **no `main`-branch code** — `main` is docs only. Each supported platform is a separate branch holding that platform's scripts.
+Each supported platform is a separate branch holding that platform's scripts. `main` carries **no platform code** — its only script is `scripts/install.sh`, the platform-agnostic entrypoint that resolves which branch you are on and delegates to it.
 
 ## Platforms
 
@@ -34,7 +34,13 @@ Command names are **dash-separated** (`setup-labrain`, not `setup_labrain`).
 | `setup-android` | macOS | Android native tooling: adb (`android-platform-tools` cask) + Android Studio cask, and persists `ANDROID_HOME`/`PATH` to your shell rc (SDK's own `platform-tools` first, so it wins over the Homebrew adb once the SDK exists). Open Android Studio once to let its wizard download the SDK/emulator, create a virtual device in Device Manager, then `adb reverse tcp:8080 tcp:8080` works against any attached device/emulator. |
 | `setup-ios` | macOS | iOS native tooling: Xcode Command Line Tools, watchman, CocoaPods. Full Xcode (simulator) needs an App Store login and can't be installed unattended — the command checks for it and prints instructions instead. |
 
-Every command is `scripts/<name>.sh` (`.ps1` on `windows`) on the matching platform branch. The general shape for running any command directly, without `laboot` installed, is the same fetch-and-forward `laboot <url>` does internally:
+Every command is `scripts/<name>.sh` (`.ps1` on `windows`) on the matching platform branch. To run one without `laboot` installed, hand its name to the `main` entrypoint rather than picking a branch yourself:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/main/scripts/install.sh | bash -s -- setup-labrain
+```
+
+Reaching a branch's script directly is still the raw fetch-and-forward `laboot <url>` does internally, and is the right shape only when you deliberately want one specific platform's copy:
 
 ```sh
 COMMAND=setup-labrain
@@ -48,13 +54,29 @@ The one raw one-liner you ever need — everything after this goes through `labo
 
 **macOS / Linux:**
 ```sh
-curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/mac/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/main/scripts/install.sh | bash
 ```
 
 **Windows:**
 ```powershell
 irm https://raw.githubusercontent.com/thinkinclabs/laboot/windows/scripts/install.ps1 | iex
 ```
+
+The `main` URL reads `uname` and installs from `mac` or `linux` for you, so nothing outside this repo hardcodes a branch name. The per-branch URLs (`.../mac/scripts/install.sh`) still work and are what `laboot install` uses to self-update, but new callers should use `main`. There is no `main` entrypoint for Windows: bootstrapping there is PowerShell, and `main`'s bash script exits with the `irm` line above if it detects Git Bash.
+
+### Bootstrapping from a script
+
+A script that needs a tool laboot provides should not carry its own branch selection, install guard and `PATH` fix-up. Pass the command to the `main` entrypoint and it installs laboot if missing, then runs it:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/thinkinclabs/laboot/main/scripts/install.sh | bash -s -- setup-sdkman
+```
+
+The `-s --` is what lets a piped script take arguments. Exit status is the forwarded command's own, so `set -e` in the caller still aborts on failure. Installation is skipped when `laboot` is already present — set `LABOOT_FORCE_INSTALL=1` to reinstall regardless.
+
+It also repairs a laboot installed from the wrong branch. The CLI pins the branch it resolves commands from, so a Linux machine holding the `mac` build keeps fetching mac's scripts — `setup-sdkman` there reaches for Homebrew and `/opt/homebrew/bin/bash`, and nothing ever corrects it. The entrypoint compares the pin against the platform it resolved and reinstalls on a mismatch.
+
+That runs in a subshell, so `PATH` changes do not reach the caller. Fine for the usual case, where the caller wants the *tool* (`$HOME/.sdkman`), not `laboot` itself. A caller that needs `laboot` on its own `PATH` afterwards should add `export PATH="$HOME/.local/bin:$PATH"`.
 
 This installs `laboot` onto your `PATH`. From then on:
 
@@ -77,6 +99,7 @@ laboot https://example.com/x
 
 - **Adding a new command**: add `scripts/<name>.sh` (`.ps1` on `windows`) to every platform branch that should support it, keep the flow (check → install if missing → check auth → login if needed → do the thing) parallel across branches, then add a row to the Commands table above.
 - **`laboot` and `install` are commands too** — they live at `scripts/laboot.sh`/`scripts/install.sh` and follow the exact same cross-branch-parity rule as any other command. `install` fetches the current branch's `laboot.sh` and writes it to a `PATH` location; `laboot` itself just resolves a name or URL and forwards it to the shell — keep it that thin, all real logic belongs in the individual command scripts.
+- **`main`'s `scripts/install.sh` is a router, not a fourth platform.** It maps `uname -s` to a branch, delegates to that branch's `install.sh`, and forwards any arguments to the installed CLI. Keep it that thin — the moment real install logic lands there, the platform branches stop being the single source of truth for their own platform, and `laboot install` (which fetches its *own* branch's `install.sh`) starts behaving differently from a fresh bootstrap. Adding a platform means adding a branch **and** a `case` arm here.
 - **Shared helpers live in `scripts/utils.sh`/`utils.ps1`** (per branch) — the `info`/`Info` banner and anything else common to multiple commands. `laboot.sh`/`laboot.ps1` sources it once and shares it with every command it runs (bash: `export -f`; PowerShell: `Invoke-Expression` already runs in the calling scope). A command invoked standalone (no `laboot` installed yet) sources it itself, guarded so it's a no-op when already defined — see any `setup-*` script for the pattern.
 - **A command's own prerequisites go through `laboot` too** — e.g. `setup-labrain` needs `setup-gh`, `setup-gh` may need `setup-brew`. Never hand-roll a second fetch for a dependency; ensure `laboot` is installed (same guard pattern used everywhere), then call `laboot <dependency-name>`. One dependency mechanism, not two.
 - **Never `source <(curl ...)`** — always download to a temp file and `source` that (`_u=$(mktemp) && curl -fsSL "URL" -o "$_u" && source "$_u" && rm -f "$_u"`). macOS ships bash 3.2 as `/bin/bash` (frozen since ~2007, GPLv3 avoidance), and its process substitution does not reliably persist functions defined via `source` into the calling shell — this bit `mac`'s CI once already.

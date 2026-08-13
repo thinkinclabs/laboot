@@ -1,0 +1,52 @@
+name: smoke
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            expect_branch: linux
+          - runs-on: macos-latest
+            expect_branch: mac
+    runs-on: ${{ matrix.runs-on }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: cold bootstrap resolves this platform's branch
+        run: |
+          set -euo pipefail
+          bash scripts/install.sh
+          test -x "$HOME/.local/bin/laboot"
+          grep -q 'BRANCH="${{ matrix.expect_branch }}"' "$HOME/.local/bin/laboot"
+
+      - name: second run is a no-op
+        run: |
+          set -euo pipefail
+          bash scripts/install.sh
+          test -x "$HOME/.local/bin/laboot"
+
+      - name: a CLI pinned to the wrong branch is repaired
+        run: |
+          set -euo pipefail
+          sed -i.bak 's/^BRANCH=".*"/BRANCH="wrong-branch"/' "$HOME/.local/bin/laboot"
+          bash scripts/install.sh
+          grep -q 'BRANCH="${{ matrix.expect_branch }}"' "$HOME/.local/bin/laboot"
+
+      - name: forwards a command, piped, the way a caller invokes it
+        run: cat scripts/install.sh | bash -s -- setup-sdkman
+
+      - name: an unknown command fails instead of exiting 0
+        run: |
+          set -euo pipefail
+          if bash scripts/install.sh not-a-real-command; then
+            echo "expected a nonzero exit for an unknown command" >&2
+            exit 1
+          fi
