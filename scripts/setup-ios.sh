@@ -43,11 +43,18 @@ fi
 
 if [ -d "/Applications/Xcode.app" ]; then
   info "Xcode found"
-  info "If freshly installed: 'sudo xcodebuild -license accept', then open Xcode once to install the iOS platform (simulator runtime)."
+  if ! xcodebuild -license check >/dev/null 2>&1; then
+    warn "Xcode license not accepted — run 'sudo xcodebuild -license accept', then re-run 'laboot setup-ios'."
+  elif xcrun simctl list runtimes 2>/dev/null | grep -q "^iOS"; then
+    info "iOS simulator runtime already installed"
+  else
+    info "Downloading iOS simulator runtime (several GB, may take a while)..."
+    xcodebuild -downloadPlatform iOS
+  fi
 else
   warn "Full Xcode not found — install it from the App Store (needed for the iOS simulator):"
   warn "  https://apps.apple.com/app/xcode/id497799835"
-  warn "Then: 'sudo xcodebuild -license accept' and open Xcode once to install the iOS platform."
+  warn "Then: 'sudo xcodebuild -license accept' and re-run 'laboot setup-ios' to download the iOS platform."
 fi
 
 info "iOS tooling ready."
