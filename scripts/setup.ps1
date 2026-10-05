@@ -1,5 +1,6 @@
-# setup.ps1 (windows) - orchestrator: runs setup-labrain then
-# setup-obsidian. Both are already idempotent, so this is too.
+# setup.ps1 (windows) - orchestrator: runs setup-labrain,
+# setup-labrain-hook, then setup-obsidian. All are already idempotent, so
+# this is too.
 
 $ErrorActionPreference = "Stop"
 
@@ -16,4 +17,5 @@ if (-not (Get-Command laboot -ErrorAction SilentlyContinue)) {
 }
 
 laboot setup-labrain
+laboot setup-labrain-hook
 laboot setup-obsidian

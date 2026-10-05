@@ -18,6 +18,20 @@ jobs:
         run: |
           & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-gh
           & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-nvm
+      # Needs a labrain clone and writes to the user's Claude settings, so it
+      # runs against a stand-in clone and a throwaway settings directory.
+      - name: laboot setup-labrain-hook (stand-in clone, throwaway settings)
+        shell: pwsh
+        run: |
+          $env:LABRAIN_PATH = "$env:RUNNER_TEMP\labrain"
+          $env:CLAUDE_CONFIG_DIR = "$env:RUNNER_TEMP\claude"
+          New-Item -ItemType Directory -Force "$env:LABRAIN_PATH\labrain-vault", "$env:LABRAIN_PATH\scripts" | Out-Null
+          Set-Content "$env:LABRAIN_PATH\scripts\update-brain.sh" "#!/usr/bin/env bash`nexit 0"
+          & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-labrain-hook
+          & "$env:LOCALAPPDATA\laboot\laboot.ps1" setup-labrain-hook
+          $settings = Get-Content "$env:CLAUDE_CONFIG_DIR\settings.json" -Raw | ConvertFrom-Json
+          $ours = @($settings.hooks.SessionStart | ForEach-Object { $_.hooks } | Where-Object { $_.command -like "*update-brain.sh*" })
+          if ($ours.Count -ne 1) { throw "expected 1 labrain hook, found $($ours.Count)" }
       # setup-sdkman needs zip/unzip, which a bare Git for Windows install
       # doesn't ship (no package manager to add it either) — soft-check
       # only, so a missing zip on this runner doesn't fail the whole job.
