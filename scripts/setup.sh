@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# setup.sh (linux) — orchestrator: runs setup-labrain then setup-obsidian.
-# Both are already idempotent, so this is too.
+# setup.sh (linux) — orchestrator: runs setup-labrain, setup-labrain-hook, then
+# setup-obsidian. All are already idempotent, so this is too.
 
 set -euo pipefail
 
@@ -15,4 +15,5 @@ if ! command -v laboot >/dev/null 2>&1; then
 fi
 
 laboot setup-labrain
+laboot setup-labrain-hook
 laboot setup-obsidian
