@@ -21,8 +21,9 @@ Command names are **dash-separated** (`setup-labrain`, not `setup_labrain`).
 | Name | Platforms | Does |
 |---|---|---|
 | `install` | all | Installs or updates the `laboot` CLI itself. |
-| `setup` | all | Meta-command: runs `setup-labrain` then `setup-obsidian`. |
+| `setup` | all | Meta-command: runs `setup-labrain`, `setup-labrain-hook`, then `setup-obsidian`. |
 | `setup-labrain` | all | Clones [labrain](https://github.com/thinkinclabs/labrain) (private) if needed and persists `$LABRAIN_PATH` — depends on `setup-gh`, run through `laboot` itself. This logic used to live in labrain's own repo; it's a laboot command now, labrain has no bootstrap script of its own anymore. |
+| `setup-labrain-hook` | all | Installs a user-level [Claude Code](https://claude.com/claude-code) `SessionStart` hook (`~/.claude/settings.json`) that runs labrain's own `scripts/update-brain.sh` — a fast-forward-only pull that skips itself when local edits or unpushed commits are in the way — so every repo on the machine starts a session with a current brain. Run it right after `setup-labrain`. Idempotent: replaces its own previous entry, leaves other hooks and settings untouched, backs the file up before changing it, refuses to touch invalid JSON. Needs `jq` (installed through the platform's package manager if missing; `winget` on Windows, where the merge runs via Git Bash). |
 | `setup-obsidian` | all | Installs/refreshes [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) into labrain's `./.claude`. Resolves `$LABRAIN_PATH` by *sourcing* `setup-labrain.sh` (not calling it as a `laboot` subprocess) so the variable lands in this shell too. |
 | `setup-gh` | all | Ensures the GitHub CLI is installed and authenticated. On macOS/Linux, falls back to Homebrew via `setup-brew` if no native package manager is found; on Windows, uses `winget`. |
 | `setup-brew` | macOS, Linux | Ensures Homebrew is installed. |
