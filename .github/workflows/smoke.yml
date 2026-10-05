@@ -24,6 +24,18 @@ jobs:
           laboot setup-nvm
           laboot setup-backend
           LABOOT_NATIVE=0 laboot setup-web
+      # Needs a labrain clone and writes to the user's Claude settings, so it
+      # runs against a stand-in clone and a throwaway settings directory.
+      - name: laboot setup-labrain-hook (stand-in clone, throwaway settings)
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          export LABRAIN_PATH="$RUNNER_TEMP/labrain" CLAUDE_CONFIG_DIR="$RUNNER_TEMP/claude"
+          mkdir -p "$LABRAIN_PATH/labrain-vault" "$LABRAIN_PATH/scripts"
+          printf '#!/usr/bin/env bash\nexit 0\n' > "$LABRAIN_PATH/scripts/update-brain.sh"
+          chmod +x "$LABRAIN_PATH/scripts/update-brain.sh"
+          laboot setup-labrain-hook
+          laboot setup-labrain-hook
+          test "$(jq '[.hooks.SessionStart[].hooks[] | select(.command | contains("update-brain.sh"))] | length' "$CLAUDE_CONFIG_DIR/settings.json")" = 1
       # setup-native / setup-android / setup-ios are excluded from the fast
       # path on purpose: their payloads are multi-GB casks (Android Studio,
       # Xcode) or GUI-gated dialogs — the syntax check above still covers
